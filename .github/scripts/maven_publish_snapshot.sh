@@ -7,4 +7,4 @@ GATEWAY_VERSION="${POM_VERSION%%-*}"
 PUBLISH_VERSION="${GATEWAY_VERSION}-SNAPSHOT"
 
 mvn --batch-mode versions:set -DnewVersion="${PUBLISH_VERSION}"
-mvn --batch-mode -DskipTests deploy
+mvn --batch-mode --activate-profiles release -DskipTests deploy

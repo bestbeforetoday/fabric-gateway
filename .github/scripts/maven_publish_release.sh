@@ -6,4 +6,4 @@ POM_VERSION=$(mvn org.apache.maven.plugins:maven-help-plugin:evaluate -Dexpressi
 PUBLISH_VERSION="${POM_VERSION%%-*}"
 
 mvn --batch-mode versions:set -DnewVersion="${PUBLISH_VERSION}"
-mvn --batch-mode -DskipTests deploy
+mvn --batch-mode --activate-profiles release -DskipTests deploy

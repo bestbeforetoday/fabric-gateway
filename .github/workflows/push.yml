@@ -17,7 +17,6 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v3
         with:
-          ref: gh-pages
           path: source
       - name: Checkout publish
         uses: actions/checkout@v3
@@ -27,20 +26,18 @@ jobs:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
       - name: Remove old API documentation
         shell: bash
-        run: rm -rf "${GITHUB_REF_NAME}/api"
+        run: rm -rf "${GITHUB_REF_NAME}/api"  
         working-directory: publish
       - name: Download JavaDoc
         uses: actions/download-artifact@v3
-        working-directory: publish
         with:
           name: java-doc
-          path: ${{ github.ref_name }}/api/java
+          path: publish/${{ github.ref_name }}/api/java
       - name: Download Node documentation
         uses: actions/download-artifact@v3
-        working-directory: publish
         with:
           name: node-doc
-          path: ${{ github.ref_name }}/api/node
+          path: publish/${{ github.ref_name }}/api/node
       - name: Publish
         working-directory: publish
         env:
@@ -80,6 +77,7 @@ jobs:
         with:
           java-version: 8
           distribution: temurin
+          cache: maven
           gpg-private-key: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Publish

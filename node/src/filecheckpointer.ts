@@ -5,8 +5,7 @@
  */
 
 import fs from 'fs';
-import { ChaincodeEvent } from './chaincodeevent';
-import { Checkpointer } from './checkpointer';
+import { ChaincodeEvent, Checkpointer } from '.';
 
 /**
  * Interface to store checkpointer state during file read write operations .
@@ -16,12 +15,18 @@ interface CheckpointerState {
     transactionId?: string;
 }
 
-export class FileCheckPointer implements Checkpointer {
+export class FileCheckpointer implements Checkpointer {
     #path: string;
     #blockNumber?: bigint;
     #transactionId?: string;
 
-    constructor(path: string) {
+    static async newInstance(path: string): Promise<FileCheckpointer> {
+        const checkpointer = new FileCheckpointer(path);
+        await checkpointer.init();
+        return checkpointer;
+    }
+
+    private constructor(path: string) {
         this.#path = path;
     }
 

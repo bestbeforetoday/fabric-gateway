@@ -6,9 +6,6 @@
 
 import * as grpc from '@grpc/grpc-js';
 import { common, gateway, peer } from '@hyperledger/fabric-protos';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
 import { chaincodeEventsMethod, CloseableAsyncIterable, commitStatusMethod, deliverFilteredMethod, deliverMethod, deliverWithPrivateDataMethod, DuplexStreamResponse, endorseMethod, evaluateMethod, GatewayGrpcClient, ServerStreamResponse, submitMethod } from './client';
 
 /* eslint-disable jest/no-export */
@@ -358,9 +355,4 @@ export function newDuplexStreamResponse<RequestType, ResponseType>(values: (Resp
     return Object.assign(newServerStreamResponse(values), {
         write: jest.fn<boolean, RequestType[]>(),
     });
-}
-
-export async function createTempDir(): Promise<string> {
-    const prefix = `${os.tmpdir()}${path.sep}`;
-    return await fs.promises.mkdtemp(prefix);
 }

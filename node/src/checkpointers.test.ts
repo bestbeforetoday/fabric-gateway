@@ -5,13 +5,14 @@
  */
 
 import { promises as fs } from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-import { ChaincodeEvent } from './chaincodeevent';
-import { Checkpointer } from './checkpointer';
-import * as checkpointers from './checkpointers';
-import { createTempDir } from './testutils.test';
+import { ChaincodeEvent, Checkpointer, checkpointers } from '.';
 
-/* eslint-disable jest/expect-expect */
+async function createTempDir(): Promise<string> {
+    const prefix = `${os.tmpdir()}${path.sep}`;
+    return await fs.mkdtemp(prefix);
+}
 
 describe('Checkpointers', () => {
     let tempDir: string;

@@ -5,7 +5,6 @@
  */
 
 import { common, peer } from '@hyperledger/fabric-protos';
-import { inspect } from 'util';
 import { assertDefined } from './gateway';
 
 export function parseTransactionEnvelope(envelope: common.Envelope): {
@@ -29,17 +28,17 @@ function parseChannelNameFromHeader(header: common.Header): string {
 function parseResultFromPayload(payload: common.Payload): Uint8Array {
     const transaction = peer.Transaction.deserializeBinary(payload.getData_asU8());
 
-    const errors: unknown[] = [];
+    const errors: string[] = [];
 
     for (const transactionAction of transaction.getActionsList()) {
         try {
             return parseResultFromTransactionAction(transactionAction);
         } catch (err) {
-            errors.push(err);
+            errors.push(String(err));
         }
     }
 
-    throw Object.assign(new Error(`No proposal response found: ${inspect(errors)}`), {
+    throw Object.assign(new Error(`No proposal response found: [${errors.join(', ')}]`), {
         suppressed: errors,
     });
 }

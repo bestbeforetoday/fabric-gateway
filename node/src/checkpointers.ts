@@ -4,23 +4,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Checkpointer } from './checkpointer';
-import { FileCheckPointer } from './filecheckpointer';
-import { InMemoryCheckPointer } from './inmemorycheckpointer';
+import { Checkpointer } from '.';
+import { FileCheckpointer } from './filecheckpointer';
 
 /**
  * Create a checkpointer that uses the specified file to store persistent state.
  * @param path - Path to a file holding persistent checkpoint state.
  */
-export async function file(path: string): Promise<Checkpointer> {
-    const filecheckpointer = new FileCheckPointer(path);
-    await filecheckpointer.init();
-    return filecheckpointer;
-}
-
-/**
- * Create a checkpointer that stores its state in memory only.
- */
-export function inMemory(): Checkpointer {
-    return new InMemoryCheckPointer();
+export function file(path: string): Promise<Checkpointer> {
+    return FileCheckpointer.newInstance(path);
 }

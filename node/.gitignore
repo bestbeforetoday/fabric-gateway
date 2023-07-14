@@ -6,3 +6,5 @@ src/protos/
 apidocs/
 package-lock.json
 sbom.json
+bundle.js
+bundle.js.map

@@ -5,8 +5,8 @@
  */
 
 import { common } from '@hyperledger/fabric-protos';
-import { randomBytes } from 'crypto';
-import { sha256 } from './hash/hashes';
+import { sha256 } from '@noble/hashes/sha256';
+import { randomBytes } from '@noble/hashes/utils';
 import { SigningIdentity } from './signingidentity';
 
 export class TransactionContext {

@@ -8,7 +8,7 @@ import { CurveFn } from '@noble/curves/abstract/weierstrass';
 import { p256 } from '@noble/curves/p256';
 import { p384 } from '@noble/curves/p384';
 import { KeyObject } from 'crypto';
-import { Signer } from './signer';
+import { Signer } from '..';
 
 const namedCurves: Record<string, CurveFn> = {
     'P-256': p256,

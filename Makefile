@@ -38,11 +38,11 @@ build: build-node build-java
 
 .PHONEY: build-node
 build-node:
-	cd "$(node_dir)" && \
+	cd '$(node_dir)' && \
 		npm install && \
 		npm run build && \
-		rm -f fabric-gateway-dev.tgz && \
-		mv $$(npm pack) fabric-gateway-dev.tgz
+		rm -f 'fabric-gateway-dev.tgz' && \
+		mv $$(npm pack) 'fabric-gateway-dev.tgz'
 
 .PHONEY: build-java
 build-java:
@@ -64,7 +64,7 @@ unit-test-go-pkcs11: setup-softhsm
 
 .PHONEY: unit-test-node
 unit-test-node: build-node
-	cd "$(node_dir)" && \
+	cd '$(node_dir)' && \
 		npm test
 
 .PHONEY: unit-test-java

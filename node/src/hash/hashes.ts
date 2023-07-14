@@ -5,7 +5,7 @@
  */
 
 import { createHash } from 'crypto';
-import { Hash } from './hash';
+import { Hash } from '..';
 
 /**
  * Returns the input message unchanged. This can be used if the signing implementation requires the full message bytes,

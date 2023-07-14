@@ -5,8 +5,8 @@
  */
 
 import { p256 } from '@noble/curves/p256';
+import { Signer } from '..';
 import * as pkcs11js from 'pkcs11js';
-import { Signer } from './signer';
 
 export interface HSMSignerOptions {
     /**

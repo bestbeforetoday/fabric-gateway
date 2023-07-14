@@ -1,3 +1,5 @@
+process.env.TSCONFIG_ROOT_DIR = __dirname;
+
 module.exports = {
     env: {
         jest: true,
@@ -7,7 +9,7 @@ module.exports = {
         'dist/',
     ],
     extends: [
-        '.eslintrc.base',
+        './.eslintrc.base',
     ],
     overrides: [
         {

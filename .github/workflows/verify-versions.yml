@@ -24,11 +24,17 @@ jobs:
   node:
     runs-on: ubuntu-latest
     name: Verify Node version
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - fabric-gateway-core
+          - fabric-gateway
     steps:
       - uses: actions/checkout@v3
       - name: Check Node package version
         shell: bash
-        working-directory: node
+        working-directory: node/${{ matric.target }}
         run: |
           PACKAGE_GATEWAY_VERSION=$(jq --raw-output .version package.json)
           echo "Expected version: ${GATEWAY_VERSION}"

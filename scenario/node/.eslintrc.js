@@ -6,6 +6,6 @@ module.exports = {
         'dist/',
     ],
     extends: [
-        '../../node/.eslintrc.base.js',
+        '../../node/fabric-gateway-core/.eslintrc.base',
     ],
 };

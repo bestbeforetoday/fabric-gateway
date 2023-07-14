@@ -5,9 +5,9 @@
  */
 
 import { msp } from '@hyperledger/fabric-protos';
+import { sha256 } from '@noble/hashes/sha256';
 import { ConnectOptions } from './gateway';
 import { Hash } from './hash/hash';
-import { sha256 } from './hash/hashes';
 import { Identity } from './identity/identity';
 import { Signer } from './identity/signer';
 

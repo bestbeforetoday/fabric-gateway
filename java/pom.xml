@@ -139,6 +139,7 @@
             <artifactId>fabric-protos</artifactId>
             <version>0.3.3</version>
         </dependency>
+
     </dependencies>
 
     <build>
@@ -301,6 +302,24 @@
                         <id>attach-sources</id>
                         <goals>
                             <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+                <version>4.8.5.0</version>
+                <configuration>
+                    <effort>max</effort>
+                    <excludeFilterFile>spotbugs-filter.xml</excludeFilterFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>

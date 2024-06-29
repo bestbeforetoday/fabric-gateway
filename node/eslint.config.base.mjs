@@ -19,5 +19,11 @@ export default tseslint.config(js.configs.recommended, ...tseslint.configs.stric
                 allowExpressions: true,
             },
         ],
+        '@typescript-eslint/no-unused-vars': [
+            'error',
+            {
+                caughtErrorsIgnorePattern: '^ignore',
+            },
+        ],
     },
 });

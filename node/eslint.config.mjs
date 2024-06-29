@@ -5,8 +5,14 @@ import { FlatCompat } from '@eslint/eslintrc';
 
 const compat = new FlatCompat({ baseDirectory: import.meta.dirname });
 
-export default tseslint.config(...base, jest.configs['flat/recommended'], ...compat.plugins('eslint-plugin-tsdoc'), {
-    rules: {
-        'tsdoc/syntax': ['error'],
+export default tseslint.config(
+    ...base,
+    jest.configs['flat/recommended'],
+    jest.configs['flat/style'],
+    ...compat.plugins('eslint-plugin-tsdoc'),
+    {
+        rules: {
+            'tsdoc/syntax': ['error'],
+        },
     },
-});
+);

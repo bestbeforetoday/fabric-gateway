@@ -68,7 +68,7 @@ export class FileCheckPointer implements Checkpointer {
     async #readFile(): Promise<Buffer | undefined> {
         try {
             return await fs.promises.readFile(this.#path);
-        } catch (e) {
+        } catch (ignored) {
             // ignore file not exist error.
         }
         return;

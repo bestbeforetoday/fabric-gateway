@@ -10,32 +10,44 @@ on:
         default: ""
 
 permissions:
+  actions: read
   contents: read
+  security-events: write
 
 jobs:
-  go:
-    name: "go (osv-scanner)"
+  go-config:
+    name: Go scanner config
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ inputs.ref }}
       - name: Set up Go
         uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version: stable
+          cache: false
           check-latest: true
-      - name: Scan
-        run: make scan-go-osv-scanner
+      - name: Create OSV-Scanner config
+        run: |
+          echo "GoVersionOverride = '$(go env GOVERSION | sed -e 's/^go//' -e 's/-.*$//')'" > osv-scanner.toml
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: go-config
+          path: osv-scanner.toml
+          if-no-files-found: error
 
-  node:
+  go:
+    needs: go-config
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@bd2db87dbf1ac35ea9daf558e69468ec000f3ee9
+    with:
+      ref: ${{ inputs.ref }}
+      download-artifact: go-config
+      matrix-property: "go-"
+      scan-args: |
+        --config=osv-scanner.toml
+        --lockfile=go.mod
+
+  node-bom:
+    name: Node BOM
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - npm-audit
-          - osv-scanner
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -44,61 +56,31 @@ jobs:
         uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
         with:
           node-version: "lts/*"
-      - name: Set up Go
-        if: ${{ matrix.target == 'osv-scanner' }}
-        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+      - name: Create BOM
+        working-directory: node
+        run: |
+          npm install --omit=dev --package-lock-only --no-audit
+          npm sbom --omit=dev --package-lock-only --sbom-format cyclonedx > ../bom.cdx.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          go-version: stable
-      - name: Scan
-        run: make scan-node-${{ matrix.target }}
+          name: node-bom
+          path: bom.cdx.json
+          if-no-files-found: error
 
-  java_osv_scanner:
-    name: "java (osv-scanner)"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ inputs.ref }}
-      - name: Set up Go
-        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
-        with:
-          go-version: stable
-      - name: Scan
-        run: make scan-java-osv-scanner
+  node:
+    needs: node-bom
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@bd2db87dbf1ac35ea9daf558e69468ec000f3ee9
+    with:
+      ref: ${{ inputs.ref }}
+      download-artifact: node-bom
+      matrix-property: "node-"
+      scan-args: |
+        --sbom=bom.cdx.json
 
-  java_dependency_check:
-    name: "java (dependency-check)"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: java
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ inputs.ref }}
-      - name: Set up Java
-        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
-        with:
-          java-version: 21
-          distribution: temurin
-          cache: maven
-      - name: Download dependencies
-        run: mvn dependency:copy-dependencies -DincludeScope=runtime
-      - name: Scan
-        env:
-          JAVA_HOME: /opt/jdk
-        uses: dependency-check/Dependency-Check_Action@3102a65fd5f36d0000297576acc56a475b0de98d # main
-        with:
-          project: fabric-gateway
-          path: java/target/dependency
-          format: HTML
-          out: reports
-          args: >
-            --suppression java/dependency-suppression.xml
-            --failOnCVSS 4
-      - name: Archive dependency-check report
-        if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: dependency-check-report-${{ inputs.ref || github.event.pull_request.number || github.ref_name }}
-          path: reports
+  java:
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@bd2db87dbf1ac35ea9daf558e69468ec000f3ee9
+    with:
+      ref: ${{ inputs.ref }}
+      matrix-property: "java-"
+      scan-args: |
+        --lockfile=java/pom.xml

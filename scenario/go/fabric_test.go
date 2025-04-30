@@ -4,7 +4,11 @@
 package scenario
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -56,6 +60,7 @@ type peerConnectionInfo struct {
 	serverNameOverride string
 	tlsRootCertPath    string
 	running            bool
+	healthzPort        uint16
 }
 
 var peerConnectionInfos = map[string]*peerConnectionInfo{
@@ -65,6 +70,7 @@ var peerConnectionInfos = map[string]*peerConnectionInfo{
 		serverNameOverride: "peer0.org1.example.com",
 		tlsRootCertPath:    fixturesDir + "/crypto-material/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt",
 		running:            true,
+		healthzPort:        7443,
 	},
 	"peer1.org1.example.com": {
 		host:               "localhost",
@@ -72,6 +78,7 @@ var peerConnectionInfos = map[string]*peerConnectionInfo{
 		serverNameOverride: "peer1.org1.example.com",
 		tlsRootCertPath:    fixturesDir + "/crypto-material/crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls/ca.crt",
 		running:            true,
+		healthzPort:        9443,
 	},
 	"peer0.org2.example.com": {
 		host:               "localhost",
@@ -79,6 +86,7 @@ var peerConnectionInfos = map[string]*peerConnectionInfo{
 		serverNameOverride: "peer0.org2.example.com",
 		tlsRootCertPath:    fixturesDir + "/crypto-material/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt",
 		running:            true,
+		healthzPort:        8443,
 	},
 	"peer1.org2.example.com": {
 		host:               "localhost",
@@ -86,6 +94,7 @@ var peerConnectionInfos = map[string]*peerConnectionInfo{
 		serverNameOverride: "peer1.org2.example.com",
 		tlsRootCertPath:    fixturesDir + "/crypto-material/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/tls/ca.crt",
 		running:            true,
+		healthzPort:        10443,
 	},
 	"peer0.org3.example.com": {
 		host:               "localhost",
@@ -93,6 +102,7 @@ var peerConnectionInfos = map[string]*peerConnectionInfo{
 		serverNameOverride: "peer0.org3.example.com",
 		tlsRootCertPath:    fixturesDir + "/crypto-material/crypto-config/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt",
 		running:            true,
+		healthzPort:        11443,
 	},
 }
 
@@ -149,7 +159,9 @@ func startFabric() error {
 			return err
 		}
 		fabricRunning = true
-		time.Sleep(20 * time.Second)
+		for peer, _ := range peerConnectionInfos {
+			waitForHealthzOK(peer)
+		}
 	} else {
 		fmt.Println("Fabric already running")
 	}
@@ -245,7 +257,6 @@ func deployChaincode(ccType, ccName, version, channelName, signaturePolicy strin
 	}
 
 	runningChaincodes.add(ccName, version, channelName, signaturePolicy)
-	time.Sleep(10 * time.Second)
 
 	return nil
 }
@@ -354,11 +365,20 @@ func commitChaincode(name string, version string, sequence string, channelName s
 		"--sequence", sequence,
 		"--waitForEvent",
 		"--peerAddresses", "peer0.org1.example.com:7051",
+		"--peerAddresses", "peer1.org1.example.com:9051",
 		"--peerAddresses", "peer0.org2.example.com:8051",
+		"--peerAddresses", "peer1.org2.example.com:10051",
+		"--peerAddresses", "peer0.org3.example.com:11051",
 		"--tlsRootCertFiles",
 		"/etc/hyperledger/configtx/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt",
 		"--tlsRootCertFiles",
+		"/etc/hyperledger/configtx/crypto-config/peerOrganizations/org1.example.com/peers/peer1.org1.example.com/tls/ca.crt",
+		"--tlsRootCertFiles",
 		"/etc/hyperledger/configtx/crypto-config/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt",
+		"--tlsRootCertFiles",
+		"/etc/hyperledger/configtx/crypto-config/peerOrganizations/org2.example.com/peers/peer1.org2.example.com/tls/ca.crt",
+		"--tlsRootCertFiles",
+		"/etc/hyperledger/configtx/crypto-config/peerOrganizations/org3.example.com/peers/peer0.org3.example.com/tls/ca.crt",
 	}
 	commitCommand = append(commitCommand, collectionConfig...)
 	_, err := dockerCommandWithTLS(commitCommand...)
@@ -408,7 +428,10 @@ func createAndJoinChannels() error {
 	}
 
 	channelsJoined = true
-	time.Sleep(10 * time.Second)
+
+	for peer, _ := range peerConnectionInfos {
+		waitForHealthzOK(peer)
+	}
 
 	return nil
 }
@@ -432,8 +455,66 @@ func startPeer(peer string) error {
 		return err
 	}
 	peerConnectionInfos[peer].running = true
-	time.Sleep(20 * time.Second)
+	return waitForHealthzOK(peer)
+}
+
+func waitForHealthzOK(peer string) error {
+	peerInfo := peerConnectionInfos[peer]
+	healthzURL := fmt.Sprintf("http://%s:%d/healthz", peerInfo.host, peerInfo.healthzPort)
+
+	var health *HealthStatus
+	for !health.IsOK() {
+		if health != nil {
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		if current, err := getHealth(healthzURL); err != nil {
+			health = new(HealthStatus)
+		} else {
+			if !current.IsOK() {
+				log.Printf("Bad health for peer %s: %v\n", peer, current)
+			}
+			health = current
+		}
+	}
+
 	return nil
+}
+
+func getHealth(url string) (*HealthStatus, error) {
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	result := new(HealthStatus)
+	if err := json.Unmarshal(body, result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// FailedCheck represents a failed status check for a component.
+type FailedCheck struct {
+	Component string `json:"component"`
+	Reason    string `json:"reason"`
+}
+
+// HealthStatus represents the current health status of all registered components.
+type HealthStatus struct {
+	Status       string        `json:"status"`
+	Time         time.Time     `json:"time"`
+	FailedChecks []FailedCheck `json:"failed_checks,omitempty"`
+}
+
+func (h *HealthStatus) IsOK() bool {
+	return h != nil && h.Status == "OK"
 }
 
 func startAllPeers() error {
@@ -450,7 +531,9 @@ func startAllPeers() error {
 	}
 
 	if startedPeers {
-		time.Sleep(20 * time.Second)
+		for peer, _ := range peerConnectionInfos {
+			waitForHealthzOK(peer)
+		}
 	}
 	return nil
 }

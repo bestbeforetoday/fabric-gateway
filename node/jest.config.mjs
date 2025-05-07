@@ -1,7 +1,10 @@
-module.exports = {
+/** @type { import('jest').Config } */
+const config = {
     roots: ['<rootDir>/src'],
-    preset: 'ts-jest',
     testEnvironment: 'node',
+    transform: {
+        '^.+\\.(t|j)sx?$': '@swc/jest',
+    },
     collectCoverage: true,
     collectCoverageFrom: ['**/*.[jt]s?(x)', '!**/*.d.ts'],
     coverageProvider: 'v8',
@@ -9,3 +12,5 @@ module.exports = {
     verbose: true,
     workerThreads: true,
 };
+
+export default config;
